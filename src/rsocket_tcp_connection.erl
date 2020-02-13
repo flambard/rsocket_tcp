@@ -25,7 +25,8 @@
 
 -record(state,
         {
-         rsocket
+         rsocket,
+         tcp_socket
         }).
 
 
@@ -52,7 +53,7 @@ start_link() ->
 
 -spec send_frame(Server :: pid(), Frame :: binary()) -> ok.
 send_frame(Server, Frame) ->
-    gen_server:cast(Server, Frame).
+    gen_server:cast(Server, {send, Frame}).
 
 
 %%%===================================================================
@@ -70,9 +71,10 @@ send_frame(Server, Frame) ->
           {ok, State :: term(), hibernate} |
           {stop, Reason :: term()} |
           ignore.
-init([]) ->
+init([Address, Port]) ->
+    {ok, TCPSocket} = gen_tcp:connect(Address, Port, []),
     {ok, RSocket} = rsocket_transport:start_connection(self()),
-    {ok, #state{rsocket = RSocket}}.
+    {ok, #state{rsocket = RSocket, tcp_socket = TCPSocket}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -104,9 +106,10 @@ handle_call(_Request, _From, State) ->
           {noreply, NewState :: term(), Timeout :: timeout()} |
           {noreply, NewState :: term(), hibernate} |
           {stop, Reason :: term(), NewState :: term()}.
-handle_cast(Frame, State) when is_binary(Frame) ->
-    %% 1. Prepend a 24-bit length on the frame
-    %% 2. Send the frame
+handle_cast({send, Frame}, State) ->
+    FrameLength = iolist_size(Frame),
+    Packet = [<<FrameLength:24>>, Frame],
+    ok = gen_tcp:send(State#state.tcp_socket, Packet),
     {noreply, State};
 
 handle_cast(_Request, State) ->
@@ -123,7 +126,10 @@ handle_cast(_Request, State) ->
           {noreply, NewState :: term(), Timeout :: timeout()} |
           {noreply, NewState :: term(), hibernate} |
           {stop, Reason :: normal | term(), NewState :: term()}.
-%% TODO: Receive TCP packet and call rsocket_transport:recv_frame/2
+handle_info({tcp, _Socket, <<FrameLength:24, Data/binary>>}, State) ->
+    <<Frame:FrameLength/binary, _/binary>> = Data,
+    ok = rsocket_transport:recv_frame(State#state.rsocket, Frame),
+    {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
