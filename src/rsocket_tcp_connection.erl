@@ -4,7 +4,7 @@
 
 %% API
 -export([
-         start_link/0
+         start_link/2
         ]).
 
 %% rsocket_transport callbacks
@@ -39,12 +39,13 @@
 %% Starts the server
 %% @end
 %%--------------------------------------------------------------------
--spec start_link() -> {ok, Pid :: pid()} |
+-spec start_link(Address :: term(), Port :: integer()) ->
+          {ok, Pid :: pid()} |
           {error, Error :: {already_started, pid()}} |
           {error, Error :: term()} |
           ignore.
-start_link() ->
-    gen_server:start_link(?MODULE, [], []).
+start_link(Address, Port) ->
+    gen_server:start_link(?MODULE, [Address, Port], []).
 
 
 %%%===================================================================
@@ -72,9 +73,12 @@ send_frame(Server, Frame) ->
           {stop, Reason :: term()} |
           ignore.
 init([Address, Port]) ->
-    {ok, TCPSocket} = gen_tcp:connect(Address, Port, []),
-    {ok, RSocket} = rsocket_transport:start_connection(self()),
-    {ok, #state{rsocket = RSocket, tcp_socket = TCPSocket}}.
+    case gen_tcp:connect(Address, Port, []) of
+        {error, Reason} -> {stop, Reason};
+        {ok, TCPSocket} ->
+            {ok, RSocket} = rsocket_transport:start_connection(self()),
+            {ok, #state{rsocket = RSocket, tcp_socket = TCPSocket}}
+    end.
 
 %%--------------------------------------------------------------------
 %% @private
