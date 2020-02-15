@@ -1,16 +1,9 @@
--module(rsocket_tcp_connection).
--behaviour(rsocket_transport).
+-module(rsocker_tcp_acceptor).
 -behaviour(gen_server).
 
 %% API
 -export([
-         start_link/1,
-         start_link/2
-        ]).
-
-%% rsocket_transport callbacks
--export([
-         send_frame/2
+         start_link/1
         ]).
 
 %% gen_server callbacks
@@ -26,8 +19,7 @@
 
 -record(state,
         {
-         rsocket,
-         tcp_socket
+         socket
         }).
 
 
@@ -35,46 +27,38 @@
 %%% API
 %%%===================================================================
 
-start_link(Socket) ->
-    gen_server:start_link(?MODULE, [Socket], []).
-
--spec start_link(Address :: term(), Port :: integer()) ->
-          {ok, Pid :: pid()} |
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts the server
+%% @end
+%%--------------------------------------------------------------------
+-spec start_link(ListenSocket :: term()) -> {ok, Pid :: pid()} |
           {error, Error :: {already_started, pid()}} |
           {error, Error :: term()} |
           ignore.
-start_link(Address, Port) ->
-    gen_server:start_link(?MODULE, [Address, Port], []).
-
-
-%%%===================================================================
-%%% rsocket_transport callbacks
-%%%===================================================================
-
--spec send_frame(Server :: pid(), Frame :: binary()) -> ok.
-send_frame(Server, Frame) ->
-    gen_server:cast(Server, {send, Frame}).
+start_link(ListenSocket) ->
+    gen_server:start_link(?MODULE, [ListenSocket], []).
 
 
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Initializes the server
+%% @end
+%%--------------------------------------------------------------------
 -spec init(Args :: term()) -> {ok, State :: term()} |
           {ok, State :: term(), Timeout :: timeout()} |
           {ok, State :: term(), hibernate} |
           {stop, Reason :: term()} |
           ignore.
-init([Socket]) ->
-    {ok, RSocket} = rsocket_transport:start_connection(self()),
-    {ok, #state{rsocket = RSocket, tcp_socket = Socket}};
-init([Address, Port]) ->
-    case gen_tcp:connect(Address, Port, []) of
-        {error, Reason} -> {stop, Reason};
-        {ok, TCPSocket} ->
-            {ok, RSocket} = rsocket_transport:start_connection(self()),
-            {ok, #state{rsocket = RSocket, tcp_socket = TCPSocket}}
-    end.
+init([ListenSocket]) ->
+    ok = gen_server:cast(self(), accept),
+    {ok, #state{ socket = ListenSocket }}.
+
 
 %%--------------------------------------------------------------------
 %% @private
@@ -106,12 +90,12 @@ handle_call(_Request, _From, State) ->
           {noreply, NewState :: term(), Timeout :: timeout()} |
           {noreply, NewState :: term(), hibernate} |
           {stop, Reason :: term(), NewState :: term()}.
-handle_cast({send, Frame}, State) ->
-    FrameLength = iolist_size(Frame),
-    Packet = [<<FrameLength:24>>, Frame],
-    ok = gen_tcp:send(State#state.tcp_socket, Packet),
-    {noreply, State};
-
+handle_cast(accept, S = #state{ socket = ListenSocket }) ->
+    {ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
+    {ok, Pid} = rsocket_tcp_connection_sup:accept_connection(AcceptSocket),
+    ok = gen_tcp:controlling_process(AcceptSocket, Pid),
+    ok = gen_server:cast(self(), accept),
+    {noreply, S};
 handle_cast(_Request, State) ->
     {noreply, State}.
 
@@ -126,10 +110,6 @@ handle_cast(_Request, State) ->
           {noreply, NewState :: term(), Timeout :: timeout()} |
           {noreply, NewState :: term(), hibernate} |
           {stop, Reason :: normal | term(), NewState :: term()}.
-handle_info({tcp, _Socket, <<FrameLength:24, Data/binary>>}, State) ->
-    <<Frame:FrameLength/binary, _/binary>> = Data,
-    ok = rsocket_transport:recv_frame(State#state.rsocket, Frame),
-    {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -173,8 +153,6 @@ code_change(_OldVsn, State, _Extra) ->
 format_status(_Opt, Status) ->
     Status.
 
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
