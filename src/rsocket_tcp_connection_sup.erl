@@ -54,7 +54,7 @@ initiate_connection(Address, Port) ->
           ignore.
 init([]) ->
     SupFlags = #{
-                 strategy => one_for_one,
+                 strategy => simple_one_for_one,
                  intensity => 1,
                  period => 5
                 },
