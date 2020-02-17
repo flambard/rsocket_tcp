@@ -36,7 +36,10 @@
 %%%===================================================================
 
 start_link(Socket) ->
-    gen_server:start_link(?MODULE, [Socket], []).
+    {ok, Pid} = gen_server:start_link(?MODULE, [Socket], []),
+    ok = gen_tcp:controlling_process(Socket, Pid),
+    ok = gen_server:cast(Pid, activate_socket),
+    {ok, Pid}.
 
 -spec start_link(Address :: term(), Port :: integer()) ->
           {ok, Pid :: pid()} |
@@ -111,6 +114,10 @@ handle_cast({send, Frame}, State) ->
     Packet = [<<FrameLength:24>>, Frame],
     ok = gen_tcp:send(State#state.tcp_socket, Packet),
     {noreply, State};
+
+handle_cast(activate_socket, S) ->
+    ok = inet:setopts(S#state.tcp_socket, [{active, true}]),
+    {noreply, S};
 
 handle_cast(_Request, State) ->
     {noreply, State}.

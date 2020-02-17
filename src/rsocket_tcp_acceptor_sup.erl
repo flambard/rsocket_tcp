@@ -3,7 +3,7 @@
 
 -export([
          start_link/1,
-         start_socket/0
+         start_socket/1
         ]).
 
 %% supervisor callbacks
@@ -13,12 +13,13 @@
 
 
 start_link(Port) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [Port]).
+    {ok, Pid} = supervisor:start_link(?MODULE, [Port]),
+    spawn_link(fun() -> empty_listeners(Pid) end),
+    {ok, Pid}.
 
 
 init([Port]) ->
     {ok, ListenSocket} = gen_tcp:listen(Port, [{active, false}]),
-    spawn_link(fun empty_listeners/0),
     SupervisorFlags = #{
                         strategy => simple_one_for_one,
                         intensity => 60,
@@ -34,10 +35,11 @@ init([Port]) ->
                  },
     {ok, {SupervisorFlags, [ChildSpec]}}.
 
-start_socket() ->
-    supervisor:start_child(?MODULE, []).
+start_socket(Supervisor) ->
+    supervisor:start_child(Supervisor, []).
 
-empty_listeners() ->
-    [start_socket() || _ <- lists:seq(1,3)],
+
+empty_listeners(Supervisor) ->
+    [start_socket(Supervisor) || _ <- lists:seq(1,3)],
     ok.
 
