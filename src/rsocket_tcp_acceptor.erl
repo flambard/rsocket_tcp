@@ -1,4 +1,4 @@
--module(rsocker_tcp_acceptor).
+-module(rsocket_tcp_acceptor).
 -behaviour(gen_server).
 
 %% API
@@ -92,9 +92,7 @@ handle_call(_Request, _From, State) ->
           {stop, Reason :: term(), NewState :: term()}.
 handle_cast(accept, S = #state{ socket = ListenSocket }) ->
     {ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
-    {ok, Pid} = rsocket_tcp_connection_sup:accept_connection(AcceptSocket),
-    ok = gen_tcp:controlling_process(AcceptSocket, Pid),
-    ok = gen_server:cast(self(), accept),
+    rsocket_tcp_connection_sup:accept_connection(AcceptSocket),
     {noreply, S};
 handle_cast(_Request, State) ->
     {noreply, State}.
