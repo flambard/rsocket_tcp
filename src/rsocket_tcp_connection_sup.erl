@@ -29,7 +29,10 @@ start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 accept_connection(Socket) ->
-    supervisor:start_child(?SERVER, [Socket]).
+    {ok, Pid} = supervisor:start_child(?SERVER, [Socket]),
+    ok = gen_tcp:controlling_process(Socket, Pid),
+    ok = rsocket_tcp_connection:activate_socket(Pid),
+    {ok, Pid}.
 
 initiate_connection(Address, Port) ->
     supervisor:start_child(?SERVER, [Address, Port]).

@@ -5,7 +5,8 @@
 %% API
 -export([
          start_link/1,
-         start_link/2
+         start_link/2,
+         activate_socket/1
         ]).
 
 %% rsocket_transport callbacks
@@ -36,10 +37,7 @@
 %%%===================================================================
 
 start_link(Socket) ->
-    {ok, Pid} = gen_server:start_link(?MODULE, [Socket], []),
-    ok = gen_tcp:controlling_process(Socket, Pid),
-    ok = gen_server:cast(Pid, activate_socket),
-    {ok, Pid}.
+    gen_server:start_link(?MODULE, [Socket], []).
 
 -spec start_link(Address :: term(), Port :: integer()) ->
           {ok, Pid :: pid()} |
@@ -48,6 +46,9 @@ start_link(Socket) ->
           ignore.
 start_link(Address, Port) ->
     gen_server:start_link(?MODULE, [Address, Port], []).
+
+activate_socket(Server) ->
+    ok = gen_server:cast(Server, activate_socket).
 
 
 %%%===================================================================
