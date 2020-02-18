@@ -38,7 +38,7 @@
 %%%===================================================================
 
 start_link(Socket) ->
-    gen_server:start_link(?MODULE, [Socket], []).
+    gen_server:start_link(?MODULE, {accept, Socket}, []).
 
 -spec start_link(Address :: term(), Port :: integer()) ->
           {ok, Pid :: pid()} |
@@ -46,7 +46,7 @@ start_link(Socket) ->
           {error, Error :: term()} |
           ignore.
 start_link(Address, Port) ->
-    gen_server:start_link(?MODULE, [Address, Port], []).
+    gen_server:start_link(?MODULE, {initiate, Address, Port}, []).
 
 activate_socket(Server) ->
     ok = gen_server:cast(Server, activate_socket).
@@ -75,10 +75,10 @@ close_connection(Server) ->
           {ok, State :: term(), hibernate} |
           {stop, Reason :: term()} |
           ignore.
-init([Socket]) ->
-    {ok, RSocket} = rsocket_transport:start_connection(self()),
+init({accept, Socket}) ->
+    {ok, RSocket} = rsocket_transport:start_connection(?MODULE),
     {ok, #state{rsocket = RSocket, tcp_socket = Socket}};
-init([Address, Port]) ->
+init({initiate, Address, Port}) ->
     case gen_tcp:connect(Address, Port, []) of
         {error, Reason} -> {stop, Reason};
         {ok, TCPSocket} ->
