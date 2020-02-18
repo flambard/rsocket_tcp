@@ -11,7 +11,8 @@
 
 %% rsocket_transport callbacks
 -export([
-         send_frame/2
+         send_frame/2,
+         close_connection/1
         ]).
 
 %% gen_server callbacks
@@ -58,6 +59,11 @@ activate_socket(Server) ->
 -spec send_frame(Server :: pid(), Frame :: binary()) -> ok.
 send_frame(Server, Frame) ->
     gen_server:cast(Server, {send, Frame}).
+
+
+-spec close_connection(Server :: pid()) -> ok.
+close_connection(Server) ->
+    gen_server:stop(Server, disconnect, 500).
 
 
 %%%===================================================================

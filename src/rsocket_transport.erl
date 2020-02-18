@@ -14,7 +14,9 @@
          recv_frame/2
         ]).
 
+
 -callback send_frame(Transport :: term(), Frame :: binary()) -> ok.
+-callback close_connection(Transport :: term()) -> ok.
 
 
 %%%===================================================================
