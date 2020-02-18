@@ -30,7 +30,8 @@ groups() ->
 
 all() ->
     [
-     test_open_close_connection
+     test_open_close_connection,
+     test_open_connection_to_not_listening_port
     ].
 
 
@@ -38,3 +39,7 @@ test_open_close_connection(_Config) ->
     Port = 4567,
     {ok, Connection} = rsocket_tcp:connect("127.0.0.1", Port),
     ok = rsocket:close_connection(Connection).
+
+test_open_connection_to_not_listening_port(_Config) ->
+    Port = 6666,
+    {error, _Reason} = rsocket_tcp:connect("127.0.0.1", Port).

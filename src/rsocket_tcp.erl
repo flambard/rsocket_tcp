@@ -11,9 +11,10 @@
 %%%===================================================================
 
 connect(Address, Port) ->
-    {ok, _TCPConnection, RsocketConnection} =
-        rsocket_tcp_connection_sup:initiate_connection(Address, Port),
-    {ok, RsocketConnection}.
+    case rsocket_tcp_connection_sup:initiate_connection(Address, Port) of
+        {error, Reason}                         -> {error, Reason};
+        {ok, _TCPConnection, RsocketConnection} -> {ok, RsocketConnection}
+    end.
 
 
 %%%===================================================================
