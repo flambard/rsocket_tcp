@@ -34,6 +34,14 @@ init([Port]) ->
                  intensity => 0,
                  period => 1
                 },
+    RSocketConnectionSup = #{
+                             id => rsocket_connection_sup,
+                             start => {rsocket_connection_sup, start_link, []},
+                             restart => permanent,
+                             shutdown => 5000,
+                             type => supervisor,
+                             modules => [rsocket_connection_sup]
+                            },
     TCPConnectionSup = #{
                          id => rsocket_tcp_connection_sup,
                          start => {rsocket_tcp_connection_sup, start_link, []},
@@ -50,4 +58,9 @@ init([Port]) ->
                        type => supervisor,
                        modules => [rsocket_tcp_acceptor_sup]
                       },
-    {ok, {SupFlags, [TCPConnectionSup, TCPAcceptorSup]}}.
+    {ok, {SupFlags,
+          [
+           RSocketConnectionSup,
+           TCPConnectionSup,
+           TCPAcceptorSup
+          ]}}.

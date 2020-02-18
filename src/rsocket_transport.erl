@@ -23,10 +23,9 @@
 %%% API
 %%%===================================================================
 
--spec start_connection(Transport :: term()) -> {ok, Connection :: term()}.
-start_connection(_Transport) ->
-    %% TODO: rsocket_connection:start(Transport).
-    {ok, pid}.
+-spec start_connection(Module :: atom()) -> {ok, Connection :: term()}.
+start_connection(Module) ->
+    rsocket_connection_sup:start_connection(Module, self()).
 
 -spec recv_frame(RSocket :: term(), Frame :: binary()) -> ok.
 recv_frame(_RSocket, _Frame) ->

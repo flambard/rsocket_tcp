@@ -10,8 +10,7 @@
 %%%===================================================================
 
 close_connection(Connection) ->
-    #{ module := Mod, pid := Pid } = Connection,
-    Mod:close_connection(Pid).
+    rsocket_connection:close(Connection).
 
 
 %%%===================================================================

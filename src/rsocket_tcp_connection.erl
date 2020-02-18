@@ -82,7 +82,7 @@ init([Address, Port]) ->
     case gen_tcp:connect(Address, Port, []) of
         {error, Reason} -> {stop, Reason};
         {ok, TCPSocket} ->
-            {ok, RSocket} = rsocket_transport:start_connection(self()),
+            {ok, RSocket} = rsocket_transport:start_connection(?MODULE),
             {ok, #state{rsocket = RSocket, tcp_socket = TCPSocket}}
     end.
 
