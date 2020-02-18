@@ -28,9 +28,8 @@ start_connection(Module) ->
     rsocket_connection_sup:start_connection(Module, self()).
 
 -spec recv_frame(RSocket :: term(), Frame :: binary()) -> ok.
-recv_frame(_RSocket, _Frame) ->
-    %% TODO: rsocket_connection:recv_frame(RSocket, Frame).
-    ok.
+recv_frame(RSocket, Frame) ->
+    rsocket_connection:recv_frame(RSocket, Frame).
 
 
 %%%===================================================================

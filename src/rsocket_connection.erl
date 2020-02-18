@@ -4,6 +4,7 @@
 %% API
 -export([
          start_link/2,
+         recv_frame/2,
          close/1
         ]).
 
@@ -38,6 +39,9 @@
           {error, Error :: term()}.
 start_link(Module, Transport) ->
     gen_statem:start_link(?MODULE, [Module, Transport], []).
+
+recv_frame(Server, Frame) ->
+    gen_statem:cast(Server, {recv, Frame}).
 
 close(Server) ->
     gen_statem:cast(Server, close_connection).
@@ -93,8 +97,12 @@ state_name(cast, close_connection, Data) ->
     Mod:close_connection(Pid),
     {stop, disconnect};
 
-state_name({call,Caller}, _Msg, Data) ->
-    {next_state, state_name, Data, [{reply,Caller,ok}]}.
+state_name(cast, {recv, _Frame}, Data) ->
+    %% TODO: Parse the received frame and act upon it
+    {next_state, state_name, Data};
+
+state_name({call, Caller}, _Msg, Data) ->
+    {next_state, state_name, Data, [{reply, Caller, ok}]}.
 
 
 %%%===================================================================
