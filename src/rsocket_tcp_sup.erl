@@ -15,8 +15,7 @@
 
 
 start_link() ->
-    Port = 4567, %% TODO: Put this in configuration
-    supervisor:start_link({local, ?SERVER}, ?MODULE, [Port]).
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 
 %% sup_flags() = #{strategy => strategy(),         % optional
@@ -28,7 +27,7 @@ start_link() ->
 %%                  shutdown => shutdown(), % optional
 %%                  type => worker(),       % optional
 %%                  modules => modules()}   % optional
-init([Port]) ->
+init([]) ->
     SupFlags = #{
                  strategy => one_for_all,
                  intensity => 0,
@@ -50,17 +49,18 @@ init([Port]) ->
                          type => supervisor,
                          modules => [rsocket_tcp_connection_sup]
                         },
-    TCPAcceptorSup = #{
-                       id => rsocket_tcp_acceptor_sup,
-                       start => {rsocket_tcp_acceptor_sup, start_link, [Port]},
-                       restart => permanent,
-                       shutdown => 3000,
-                       type => supervisor,
-                       modules => [rsocket_tcp_acceptor_sup]
-                      },
+    TCPAcceptorSupSup =
+        #{
+          id => rsocket_tcp_acceptor_sup_sup,
+          start => {rsocket_tcp_acceptor_sup_sup, start_link, []},
+          restart => permanent,
+          shutdown => 3000,
+          type => supervisor,
+          modules => [rsocket_tcp_acceptor_sup_sup]
+         },
     {ok, {SupFlags,
           [
            RSocketConnectionSup,
            TCPConnectionSup,
-           TCPAcceptorSup
+           TCPAcceptorSupSup
           ]}}.

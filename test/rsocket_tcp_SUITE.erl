@@ -37,6 +37,7 @@ all() ->
 
 test_open_close_connection(_Config) ->
     Port = 4567,
+    ok = rsocket_tcp:start_listening(Port),
     {ok, Connection} = rsocket_tcp:connect("127.0.0.1", Port),
     ok = rsocket:close_connection(Connection).
 
