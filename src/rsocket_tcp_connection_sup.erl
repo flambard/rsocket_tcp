@@ -64,7 +64,7 @@ init([]) ->
     ChildSpec = #{
                   id => rsocket_tcp_connection,
                   start => {rsocket_tcp_connection, start_link, []},
-                  restart => permanent,
+                  restart => temporary,
                   shutdown => 5000,
                   type => worker,
                   modules => [rsocket_tcp_connection]
