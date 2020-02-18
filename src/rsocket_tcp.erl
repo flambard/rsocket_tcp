@@ -11,7 +11,9 @@
 %%%===================================================================
 
 connect(Address, Port) ->
-    rsocket_tcp_connection_sup:initiate_connection(Address, Port).
+    {ok, _TCPConnection, RsocketConnection} =
+        rsocket_tcp_connection_sup:initiate_connection(Address, Port),
+    {ok, RsocketConnection}.
 
 
 %%%===================================================================

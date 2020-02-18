@@ -40,7 +40,7 @@ start_link(Module, Transport) ->
     gen_statem:start_link(?MODULE, [Module, Transport], []).
 
 close(Server) ->
-    gen_statem:stop(Server, disconnect, 1000).
+    gen_statem:cast(Server, close_connection).
 
 
 %%%===================================================================
@@ -88,6 +88,11 @@ code_change(_OldVsn, State, Data, _Extra) ->
                  Msg :: term(),
                  Data :: term()) ->
           gen_statem:event_handler_result(atom()).
+state_name(cast, close_connection, Data) ->
+    #data{ transport_pid = Pid, transport_mod = Mod } = Data,
+    Mod:close_connection(Pid),
+    {stop, disconnect};
+
 state_name({call,Caller}, _Msg, Data) ->
     {next_state, state_name, Data, [{reply,Caller,ok}]}.
 

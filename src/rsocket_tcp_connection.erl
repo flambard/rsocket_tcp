@@ -40,13 +40,10 @@
 start_link(Socket) ->
     gen_server:start_link(?MODULE, {accept, Socket}, []).
 
--spec start_link(Address :: term(), Port :: integer()) ->
-          {ok, Pid :: pid()} |
-          {error, Error :: {already_started, pid()}} |
-          {error, Error :: term()} |
-          ignore.
 start_link(Address, Port) ->
-    gen_server:start_link(?MODULE, {initiate, Address, Port}, []).
+    {ok, Pid} = gen_server:start_link(?MODULE, {initiate, Address, Port}, []),
+    RSocketConnection = gen_server:call(Pid, get_rsocket),
+    {ok, Pid, RSocketConnection}.
 
 activate_socket(Server) ->
     ok = gen_server:cast(Server, activate_socket).
@@ -101,6 +98,9 @@ init({initiate, Address, Port}) ->
           {noreply, NewState :: term(), hibernate} |
           {stop, Reason :: term(), Reply :: term(), NewState :: term()} |
           {stop, Reason :: term(), NewState :: term()}.
+handle_call(get_rsocket, _From, S) ->
+    {reply, S#state.rsocket, S};
+
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.

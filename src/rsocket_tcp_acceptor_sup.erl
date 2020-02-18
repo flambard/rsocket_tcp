@@ -19,7 +19,8 @@ start_link(Port) ->
 
 
 init([Port]) ->
-    {ok, ListenSocket} = gen_tcp:listen(Port, [{active, false}]),
+    SocketOptions = [{active, false}, {reuseaddr, true}],
+    {ok, ListenSocket} = gen_tcp:listen(Port, SocketOptions),
     SupervisorFlags = #{
                         strategy => simple_one_for_one,
                         intensity => 60,
