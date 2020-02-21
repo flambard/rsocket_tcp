@@ -19,8 +19,7 @@ start_link(Port) ->
 
 
 init([Port]) ->
-    SocketOptions = [{active, false}, {reuseaddr, true}],
-    {ok, ListenSocket} = gen_tcp:listen(Port, SocketOptions),
+    {ok, ListenSocket} = rsocket_tcp_connection:start_listening_socket(Port),
     SupervisorFlags = #{
                         strategy => simple_one_for_one,
                         intensity => 60,

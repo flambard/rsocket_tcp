@@ -5,7 +5,7 @@
 
 %% API
 -export([
-         start_link/2,
+         start_link/3,
          recv_frame/2,
          close/1
         ]).
@@ -20,6 +20,7 @@
 
 %% gen_statem states
 -export([
+         setup_connection/3,
          awaiting_setup/3
         ]).
 
@@ -35,12 +36,14 @@
 %%% API
 %%%===================================================================
 
--spec start_link(Module :: atom(), Transport :: pid()) ->
+-spec start_link(Mode :: accept | initiate,
+                 Module :: atom(),
+                 Transport :: pid()) ->
           {ok, Pid :: pid()} |
           ignore |
           {error, Error :: term()}.
-start_link(Module, Transport) ->
-    gen_statem:start_link(?MODULE, [Module, Transport], []).
+start_link(Mode, Module, Transport) ->
+    gen_statem:start_link(?MODULE, [Mode, Module, Transport], []).
 
 recv_frame(Server, Frame) ->
     gen_statem:cast(Server, {recv, Frame}).
@@ -58,12 +61,20 @@ callback_mode() -> state_functions.
 
 
 -spec init(Args :: term()) -> gen_statem:init_result(atom()).
-init([Module, Transport]) ->
+init([accept, Module, Transport]) ->
     Data = #data{
               transport_mod = Module,
               transport_pid = Transport
              },
-    {ok, awaiting_setup, Data}.
+    {ok, awaiting_setup, Data};
+
+init([initiate, Module, Transport]) ->
+    Data = #data{
+              transport_mod = Module,
+              transport_pid = Transport
+             },
+    gen_statem:cast(self(), send_setup),
+    {ok, setup_connection, Data}.
 
 
 -spec terminate(Reason :: term(), State :: term(), Data :: term()) ->
@@ -85,6 +96,13 @@ code_change(_OldVsn, State, Data, _Extra) ->
 %%% States
 %%%===================================================================
 
+setup_connection(cast, send_setup, Data) ->
+    #data{ transport_pid = Pid, transport_mod = Mod } = Data,
+    Setup = ?RSOCKET_SETUP(0, 2, 30000, 40000, <<>>),
+    Frame = ?RSOCKET_FRAME_HEADER(0, ?FRAME_TYPE_SETUP, 0, 0, 0, Setup),
+    Mod:send_frame(Pid, Frame),
+    {next_state, connected, Data}.
+
 awaiting_setup(cast, close_connection, Data) ->
     #data{ transport_pid = Pid, transport_mod = Mod } = Data,
     Mod:close_connection(Pid),
@@ -96,9 +114,9 @@ awaiting_setup(cast, {recv, Frame}, Data) ->
       ) = Frame,
     case {StreamID, FrameType} of
         {0, ?FRAME_TYPE_SETUP} ->
-            {next_state, hmmmm, Data};
+            {next_state, connected, Data};
         {0, ?FRAME_TYPE_RESUME} ->
-            {next_state, hmmmm, Data};
+            {next_state, connected, Data};
         _ ->
             %% TODO: send ERROR[INVALID_SETUP]
             {stop, invalid_setup}

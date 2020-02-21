@@ -4,7 +4,8 @@
 %% API
 -export([
          start_link/0,
-         start_connection/2
+         accept_connection/2,
+         initiate_connection/2
         ]).
 
 %% Supervisor callbacks
@@ -27,8 +28,11 @@
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-start_connection(Module, Transport) ->
-    supervisor:start_child(?SERVER, [Module, Transport]).
+accept_connection(Module, Transport) ->
+    supervisor:start_child(?SERVER, [accept, Module, Transport]).
+
+initiate_connection(Module, Transport) ->
+    supervisor:start_child(?SERVER, [initiate, Module, Transport]).
 
 
 %%%===================================================================

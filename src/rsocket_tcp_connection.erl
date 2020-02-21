@@ -6,7 +6,8 @@
 -export([
          start_link/1,
          start_link/2,
-         activate_socket/1
+         activate_socket/1,
+         start_listening_socket/1
         ]).
 
 %% rsocket_transport callbacks
@@ -48,6 +49,10 @@ start_link(Address, Port) ->
 activate_socket(Server) ->
     ok = gen_server:cast(Server, activate_socket).
 
+start_listening_socket(Port) ->
+    SocketOptions = [binary, {active, false}, {reuseaddr, true}],
+    gen_tcp:listen(Port, SocketOptions).
+
 
 %%%===================================================================
 %%% rsocket_transport callbacks
@@ -73,13 +78,14 @@ close_connection(Server) ->
           {stop, Reason :: term()} |
           ignore.
 init({accept, Socket}) ->
-    {ok, RSocket} = rsocket_transport:start_connection(?MODULE),
+    {ok, RSocket} = rsocket_transport:accept_connection(?MODULE),
     {ok, #state{rsocket = RSocket, tcp_socket = Socket}};
 init({initiate, Address, Port}) ->
-    case gen_tcp:connect(Address, Port, []) of
+    SocketOptions = [binary, {active, true}],
+    case gen_tcp:connect(Address, Port, SocketOptions) of
         {error, Reason} -> {stop, Reason};
         {ok, TCPSocket} ->
-            {ok, RSocket} = rsocket_transport:start_connection(?MODULE),
+            {ok, RSocket} = rsocket_transport:initiate_connection(?MODULE),
             {ok, #state{rsocket = RSocket, tcp_socket = TCPSocket}}
     end.
 
@@ -145,6 +151,7 @@ handle_info({tcp, _Socket, <<FrameLength:24, Data/binary>>}, State) ->
     ok = rsocket_transport:recv_frame(State#state.rsocket, Frame),
     {noreply, State};
 handle_info(_Info, State) ->
+    erlang:display(_Info),
     {noreply, State}.
 
 %%--------------------------------------------------------------------

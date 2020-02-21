@@ -43,6 +43,19 @@
 
 
 -define(RSOCKET_SETUP(MajorVersion, MinorVersion, TimeBetweenKeepaliveFrames,
+                      MaxLifetime, MetadataAndPayload),
+        <<
+          (MajorVersion)               :16,
+          (MinorVersion)               :16,
+          0                            :1,
+          (TimeBetweenKeepaliveFrames) :31,
+          0                            :1,
+          (MaxLifetime)                :31,
+          (MetadataAndPayload)         /binary
+        >>
+       ).
+
+-define(RSOCKET_SETUP(MajorVersion, MinorVersion, TimeBetweenKeepaliveFrames,
                       MaxLifetime, TokenLength, ResumeIdentificationToken),
         <<
           (MajorVersion)               :16,
