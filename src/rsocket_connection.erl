@@ -1,6 +1,8 @@
 -module(rsocket_connection).
 -behaviour(gen_statem).
 
+-include("rsocket_format.hrl").
+
 %% API
 -export([
          start_link/2,
@@ -97,8 +99,11 @@ state_name(cast, close_connection, Data) ->
     Mod:close_connection(Pid),
     {stop, disconnect};
 
-state_name(cast, {recv, _Frame}, Data) ->
-    %% TODO: Parse the received frame and act upon it
+state_name(cast, {recv, Frame}, Data) ->
+    ?RSOCKET_FRAME_HEADER(
+       StreamID, FrameType, IgnoreFlag, MetadataFlag, OtherFlags, FramePayload
+      ) = Frame,
+    {ok, _Stream} = rsocket_stream_sup:start_stream(StreamID),
     {next_state, state_name, Data};
 
 state_name({call, Caller}, _Msg, Data) ->
