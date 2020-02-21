@@ -42,7 +42,8 @@
 -define(FRAME_TYPE_EXT,              16#3F).
 
 
--define(RSOCKET_SETUP(MetadataLength, MetadataPayload),
+-define(RSOCKET_SETUP(MajorVersion, MinorVersion, TimeBetweenKeepaliveFrames,
+                      MaxLifetime, TokenLength, ResumeIdentificationToken),
         <<
           (MajorVersion)               :16,
           (MinorVersion)               :16,

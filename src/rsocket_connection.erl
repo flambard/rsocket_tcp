@@ -20,7 +20,7 @@
 
 %% gen_statem states
 -export([
-         state_name/3
+         awaiting_setup/3
         ]).
 
 
@@ -57,14 +57,13 @@ close(Server) ->
 callback_mode() -> state_functions.
 
 
--spec init(Args :: term()) ->
-          gen_statem:init_result(atom()).
+-spec init(Args :: term()) -> gen_statem:init_result(atom()).
 init([Module, Transport]) ->
     Data = #data{
               transport_mod = Module,
               transport_pid = Transport
              },
-    {ok, state_name, Data}.
+    {ok, awaiting_setup, Data}.
 
 
 -spec terminate(Reason :: term(), State :: term(), Data :: term()) ->
@@ -86,28 +85,27 @@ code_change(_OldVsn, State, Data, _Extra) ->
 %%% States
 %%%===================================================================
 
--spec state_name('enter',
-                 OldState :: atom(),
-                 Data :: term()) ->
-          gen_statem:state_enter_result('state_name');
-                (gen_statem:event_type(),
-                 Msg :: term(),
-                 Data :: term()) ->
-          gen_statem:event_handler_result(atom()).
-state_name(cast, close_connection, Data) ->
+awaiting_setup(cast, close_connection, Data) ->
     #data{ transport_pid = Pid, transport_mod = Mod } = Data,
     Mod:close_connection(Pid),
     {stop, disconnect};
 
-state_name(cast, {recv, Frame}, Data) ->
+awaiting_setup(cast, {recv, Frame}, Data) ->
     ?RSOCKET_FRAME_HEADER(
        StreamID, FrameType, IgnoreFlag, MetadataFlag, OtherFlags, FramePayload
       ) = Frame,
-    {ok, _Stream} = rsocket_stream_sup:start_stream(StreamID),
-    {next_state, state_name, Data};
+    case {StreamID, FrameType} of
+        {0, ?FRAME_TYPE_SETUP} ->
+            {next_state, hmmmm, Data};
+        {0, ?FRAME_TYPE_RESUME} ->
+            {next_state, hmmmm, Data};
+        _ ->
+            %% TODO: send ERROR[INVALID_SETUP]
+            {stop, invalid_setup}
+    end;
 
-state_name({call, Caller}, _Msg, Data) ->
-    {next_state, state_name, Data, [{reply, Caller, ok}]}.
+awaiting_setup({call, Caller}, _Msg, Data) ->
+    {next_state, awaiting_setup, Data, [{reply, Caller, ok}]}.
 
 
 %%%===================================================================
