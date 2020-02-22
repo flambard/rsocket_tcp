@@ -101,7 +101,37 @@ setup_connection(cast, send_setup, Data) ->
     Setup = ?RSOCKET_SETUP(0, 2, 30000, 40000, <<>>),
     Frame = ?RSOCKET_FRAME_HEADER(0, ?FRAME_TYPE_SETUP, 0, 0, 0, Setup),
     Mod:send_frame(Pid, Frame),
-    {next_state, connected, Data}.
+    {next_state, setup_connection, Data};
+
+setup_connection(cast, {recv, Frame}, Data) ->
+    ?RSOCKET_FRAME_HEADER(
+       StreamID, FrameType, IgnoreFlag, MetadataFlag, OtherFlags, FramePayload
+      ) = Frame,
+    case {StreamID, FrameType} of
+        {0, ?FRAME_TYPE_ERROR} ->
+            {stop, invalid_setup};
+        {0, ?FRAME_TYPE_LEASE} ->
+            %% TODO: set up a lease
+            {next_state, connected, Data};
+        {0, ?FRAME_TYPE_REQUEST_RESPONSE} ->
+            %% TODO: start a single-response request
+            {next_state, connected, Data};
+        {0, ?FRAME_TYPE_REQUEST_FNF} ->
+            %% TODO: start a fire-and-forget request
+            {next_state, connected, Data};
+        {0, ?FRAME_TYPE_REQUEST_STREAM} ->
+            %% TODO: start a stream
+            {next_state, connected, Data};
+        {0, ?FRAME_TYPE_REQUEST_CHANNEL} ->
+            %% TODO: start a channel
+            {next_state, connected, Data};
+        {0, ?FRAME_TYPE_REQUEST_N} ->
+            %% TODO: top-up the request credit
+            {next_state, connected, Data};
+        _ ->
+            %% TODO: send ERROR[INVALID_SETUP]
+            {stop, invalid_setup}
+    end.
 
 awaiting_setup(cast, close_connection, Data) ->
     #data{ transport_pid = Pid, transport_mod = Mod } = Data,
