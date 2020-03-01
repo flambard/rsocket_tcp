@@ -4,8 +4,10 @@
   {registered, []},
   {mod, {rsocket_tcp_app, []}},
   {applications,
-   [kernel,
-    stdlib
+   [
+    kernel,
+    stdlib,
+    rsocket
    ]},
   {env,[]},
   {modules, []},

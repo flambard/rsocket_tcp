@@ -33,22 +33,6 @@ init([]) ->
                  intensity => 0,
                  period => 1
                 },
-    RSocketStreamSup = #{
-                         id => rsocket_stream_sup,
-                         start => {rsocket_stream_sup, start_link, []},
-                         restart => permanent,
-                         shutdown => 5000,
-                         type => supervisor,
-                         modules => [rsocket_stream_sup]
-                        },
-    RSocketConnectionSup = #{
-                             id => rsocket_connection_sup,
-                             start => {rsocket_connection_sup, start_link, []},
-                             restart => permanent,
-                             shutdown => 5000,
-                             type => supervisor,
-                             modules => [rsocket_connection_sup]
-                            },
     TCPConnectionSup = #{
                          id => rsocket_tcp_connection_sup,
                          start => {rsocket_tcp_connection_sup, start_link, []},
@@ -68,8 +52,6 @@ init([]) ->
          },
     {ok, {SupFlags,
           [
-           RSocketStreamSup,
-           RSocketConnectionSup,
            TCPConnectionSup,
            TCPAcceptorSupSup
           ]}}.
