@@ -36,12 +36,14 @@ all() ->
 
 
 test_open_close_connection(_Config) ->
+    RSocketHandlers = #{},
     Port = 4567,
-    ok = rsocket_tcp:start_listening(Port),
-    {ok, Connection} = rsocket_tcp:connect("127.0.0.1", Port),
+    ok = rsocket_tcp:start_listening(Port, RSocketHandlers),
+    {ok, Connection} = rsocket_tcp:connect("127.0.0.1", Port, RSocketHandlers),
     receive after 1000 -> ok end,
     ok = rsocket:close_connection(Connection).
 
 test_open_connection_to_not_listening_port(_Config) ->
+    RSocketHandlers = #{},
     Port = 6666,
-    {error, _Reason} = rsocket_tcp:connect("127.0.0.1", Port).
+    {error, _Reason} = rsocket_tcp:connect("127.0.0.1", Port, RSocketHandlers).

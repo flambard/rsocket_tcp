@@ -5,7 +5,7 @@
 -export([
          start_link/0,
          accept_connection/1,
-         initiate_connection/2
+         initiate_connection/3
         ]).
 
 %% Supervisor callbacks
@@ -34,8 +34,8 @@ accept_connection(Socket) ->
     ok = rsocket_tcp_connection:activate_socket(Pid),
     {ok, Pid}.
 
-initiate_connection(Address, Port) ->
-    supervisor:start_child(?SERVER, [Address, Port]).
+initiate_connection(Address, Port, RSocketHandlers) ->
+    supervisor:start_child(?SERVER, [Address, Port, RSocketHandlers]).
 
 
 %%%===================================================================

@@ -2,7 +2,7 @@
 -behaviour(supervisor).
 
 -export([
-         start_link/1,
+         start_link/2,
          start_socket/1
         ]).
 
@@ -12,13 +12,13 @@
         ]).
 
 
-start_link(Port) ->
-    {ok, Pid} = supervisor:start_link(?MODULE, [Port]),
+start_link(Port, RSocketHandlers) ->
+    {ok, Pid} = supervisor:start_link(?MODULE, [Port, RSocketHandlers]),
     spawn_link(fun() -> empty_listeners(Pid) end),
     {ok, Pid}.
 
 
-init([Port]) ->
+init([Port, RSocketHandlers]) ->
     {ok, ListenSocket} = rsocket_tcp_connection:start_listening_socket(Port),
     SupervisorFlags = #{
                         strategy => simple_one_for_one,
@@ -27,7 +27,11 @@ init([Port]) ->
                        },
     ChildSpec = #{
                   id => rsocket_tcp_acceptor,
-                  start => {rsocket_tcp_acceptor, start_link, [ListenSocket]},
+                  start => {
+                            rsocket_tcp_acceptor,
+                            start_link,
+                            [ListenSocket, RSocketHandlers]
+                           },
                   restart => temporary,
                   shutdown => 1000,
                   type => worker,

@@ -4,7 +4,7 @@
 %% API
 -export([
          start_link/0,
-         start_tcp_acceptor_supervisor/1
+         start_tcp_acceptor_supervisor/2
         ]).
 
 %% Supervisor callbacks
@@ -27,8 +27,8 @@
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-start_tcp_acceptor_supervisor(Port) ->
-    supervisor:start_child(?SERVER, [Port]).
+start_tcp_acceptor_supervisor(Port, RSocketHandlers) ->
+    supervisor:start_child(?SERVER, [Port, RSocketHandlers]).
 
 
 %%%===================================================================

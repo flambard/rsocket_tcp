@@ -1,4 +1,4 @@
 [{<<"rsocket">>,
   {git,"git://github.com/flambard/rsocket.git",
-       {ref,"9d1724fffbd9f116133f98d175028958bb971a0e"}},
+       {ref,"b1649e2d5f7f546d2c12d026253e2a27540653e6"}},
   0}].

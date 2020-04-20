@@ -4,8 +4,8 @@
 
 %% API
 -export([
-         start_link/1,
          start_link/2,
+         start_link/3,
          activate_socket/1,
          start_listening_socket/1
         ]).
@@ -38,11 +38,12 @@
 %%% API
 %%%===================================================================
 
-start_link(Socket) ->
-    gen_server:start_link(?MODULE, {accept, Socket}, []).
+start_link(Socket, RSocketHandlers) ->
+    gen_server:start_link(?MODULE, {accept, Socket, RSocketHandlers}, []).
 
-start_link(Address, Port) ->
-    {ok, Pid} = gen_server:start_link(?MODULE, {initiate, Address, Port}, []),
+start_link(Address, Port, RSocketHandlers) ->
+    {ok, Pid} = gen_server:start_link(
+                  ?MODULE, {initiate, Address, Port, RSocketHandlers}, []),
     RSocketConnection = gen_server:call(Pid, get_rsocket),
     {ok, Pid, RSocketConnection}.
 
@@ -77,15 +78,17 @@ close_connection(Server) ->
           {ok, State :: term(), hibernate} |
           {stop, Reason :: term()} |
           ignore.
-init({accept, Socket}) ->
-    {ok, RSocket} = rsocket_transport:accept_connection(?MODULE),
+init({accept, Socket, RSocketHandlers}) ->
+    {ok, RSocket} =
+        rsocket_transport:accept_connection(?MODULE, RSocketHandlers),
     {ok, #state{rsocket = RSocket, tcp_socket = Socket}};
-init({initiate, Address, Port}) ->
+init({initiate, Address, Port, RSocketHandlers}) ->
     SocketOptions = [binary, {active, true}],
     case gen_tcp:connect(Address, Port, SocketOptions) of
         {error, Reason} -> {stop, Reason};
         {ok, TCPSocket} ->
-            {ok, RSocket} = rsocket_transport:initiate_connection(?MODULE),
+            {ok, RSocket} =
+                rsocket_transport:initiate_connection(?MODULE, RSocketHandlers),
             {ok, #state{rsocket = RSocket, tcp_socket = TCPSocket}}
     end.
 
